@@ -1,0 +1,5 @@
+PyQt6>=6.4.0
+paramiko>=3.0.0
+docker>=6.0.0
+cryptography>=41.0.0
+PyYAML>=6.0
