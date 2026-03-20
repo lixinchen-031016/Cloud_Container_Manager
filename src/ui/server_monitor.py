@@ -108,64 +108,112 @@ class MonitorWorker(QThread):
 
 
 class ResourceCard(QFrame):
-    """资源卡片组件"""
+    """资源卡片组件 - macOS 风格"""
     
     def __init__(self, title: str, parent=None):
         super().__init__(parent)
-        self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Raised)
         self.setObjectName("resourceCard")
+        self.setFrameStyle(QFrame.Shape.NoFrame)
         
         layout = QVBoxLayout()
-        layout.setSpacing(8)
+        layout.setSpacing(12)
+        layout.setContentsMargins(20, 20, 20, 20)
         
         # 标题
         self.title_label = QLabel(title)
-        self.title_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        self.title_label.setStyleSheet("""
+            font-weight: 600;
+            font-size: 15px;
+            color: #1d1d1f;
+        """)
         layout.addWidget(self.title_label)
         
         # 内容区域
         self.content_layout = QVBoxLayout()
-        self.content_layout.setSpacing(5)
+        self.content_layout.setSpacing(8)
         layout.addLayout(self.content_layout)
         
         self.setLayout(layout)
+        
+        # 应用卡片样式
+        self.setStyleSheet("""
+            QFrame#resourceCard {
+                background-color: #ffffff;
+                border-radius: 12px;
+            }
+            
+            QFrame#resourceCard:hover {
+                background-color: #fafafa;
+            }
+        """)
     
     def add_progress_bar(self, label: str, value: float = 0.0) -> QProgressBar:
         """添加进度条"""
+        # 标签
+        label_widget = QLabel(label)
+        label_widget.setStyleSheet("""
+            color: #86868b;
+            font-size: 13px;
+            margin-bottom: 4px;
+        """)
+        
+        # 进度条
         progress = QProgressBar()
         progress.setRange(0, 100)
         progress.setValue(int(value))
         progress.setFormat(f"{value:.1f}%")
+        progress.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
         # 根据值设置颜色
-        if value < 60:
-            color = "#4CAF50"  # 绿色
-        elif value < 80:
-            color = "#FF9800"  # 橙色
+        if value >= 90:
+            color = "#ff3b30"  # 红色 - 危险
+        elif value >= 70:
+            color = "#ff9500"  # 橙色 - 警告
         else:
-            color = "#F44336"  # 红色
+            color = "#007aff"  # 蓝色 - 正常
         
         progress.setStyleSheet(f"""
             QProgressBar {{
-                border: 1px solid #ccc;
-                border-radius: 3px;
+                border: none;
+                border-radius: 4px;
                 text-align: center;
+                background-color: #e8e8ed;
+                height: 6px;
+                font-size: 11px;
+                color: transparent;
             }}
             QProgressBar::chunk {{
                 background-color: {color};
+                border-radius: 4px;
             }}
         """)
         
-        label_widget = QLabel(label)
         self.content_layout.addWidget(label_widget)
         self.content_layout.addWidget(progress)
         
         return progress
     
-    def add_info_label(self, text: str):
+    def add_value_label(self, text: str) -> QLabel:
+        """添加数值标签"""
+        label = QLabel(text)
+        label.setStyleSheet("""
+            color: #1d1d1f;
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 4px;
+        """)
+        self.content_layout.addWidget(label)
+        return label
+    
+    def add_info_label(self, text: str) -> QLabel:
         """添加信息标签"""
         label = QLabel(text)
         label.setWordWrap(True)
+        label.setStyleSheet("""
+            color: #86868b;
+            font-size: 12px;
+            line-height: 1.4;
+        """)
         self.content_layout.addWidget(label)
         return label
 
@@ -183,17 +231,24 @@ class ServerMonitorPanel(QWidget):
     def _init_ui(self):
         """初始化 UI"""
         layout = QVBoxLayout()
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        layout.setContentsMargins(20, 20, 20, 20)
         
         # 标题和刷新按钮
         header_layout = QHBoxLayout()
-        title_label = QLabel("服务器监控")
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        title_label = QLabel("📊 服务器监控")
+        title_label.setStyleSheet("""
+            font-size: 24px;
+            font-weight: 700;
+            color: #1d1d1f;
+        """)
         header_layout.addWidget(title_label)
         
         header_layout.addStretch()
         
-        self.refresh_btn = QPushButton("刷新")
+        self.refresh_btn = QPushButton("⟳ 刷新")
+        self.refresh_btn.setObjectName("secondaryBtn")
+        self.refresh_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.refresh_btn.clicked.connect(self._manual_refresh)
         header_layout.addWidget(self.refresh_btn)
         
@@ -203,15 +258,18 @@ class ServerMonitorPanel(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setFrameStyle(QFrame.Shape.NoFrame)
         
         # 内容 widget
         content_widget = QWidget()
         grid_layout = QGridLayout()
         grid_layout.setSpacing(15)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
         
         # CPU 卡片
         self.cpu_card = ResourceCard("CPU")
         self.cpu_usage_bar = self.cpu_card.add_progress_bar("使用率", 0.0)
+        self.cpu_value_label = self.cpu_card.add_value_label("0%")
         self.cpu_cores_label = self.cpu_card.add_info_label("核心数：-")
         self.cpu_model_label = self.cpu_card.add_info_label("型号：-")
         grid_layout.addWidget(self.cpu_card, 0, 0)
@@ -219,26 +277,29 @@ class ServerMonitorPanel(QWidget):
         # 内存卡片
         self.memory_card = ResourceCard("内存")
         self.memory_usage_bar = self.memory_card.add_progress_bar("使用率", 0.0)
+        self.memory_value_label = self.memory_card.add_value_label("0%")
         self.memory_detail_label = self.memory_card.add_info_label("")
         grid_layout.addWidget(self.memory_card, 0, 1)
         
         # 系统负载卡片
         self.load_card = ResourceCard("系统负载")
+        self.load_value_label = self.load_card.add_value_label("-")
         self.load_1min_label = self.load_card.add_info_label("1 分钟：-")
         self.load_5min_label = self.load_card.add_info_label("5 分钟：-")
         self.load_15min_label = self.load_card.add_info_label("15 分钟：-")
-        self.processes_label = self.load_card.add_info_label("进程数：-")
+        self.processes_label = self.load_card.add_info_label("进程数：-/-")
         grid_layout.addWidget(self.load_card, 1, 0)
         
         # 网络卡片
-        self.network_card = ResourceCard("网络")
-        self.network_label = self.network_card.add_info_label("暂无数据")
+        self.network_card = ResourceCard("网络流量")
+        self.network_label = self.network_card.add_info_label("等待数据...")
         grid_layout.addWidget(self.network_card, 1, 1)
         
         # 磁盘卡片（跨两列）
         self.disk_card = ResourceCard("磁盘空间")
         self.disk_layout = QVBoxLayout()
-        self.disk_layout.setSpacing(8)
+        self.disk_layout.setSpacing(10)
+        self.disk_layout.setContentsMargins(0, 0, 0, 0)
         self.disk_card.content_layout.addLayout(self.disk_layout)
         grid_layout.addWidget(self.disk_card, 2, 0, 1, 2)
         
@@ -247,8 +308,12 @@ class ServerMonitorPanel(QWidget):
         layout.addWidget(scroll)
         
         # 状态标签
-        self.status_label = QLabel("未连接")
-        self.status_label.setStyleSheet("color: #999;")
+        self.status_label = QLabel("● 未连接")
+        self.status_label.setStyleSheet("""
+            color: #86868b;
+            font-size: 13px;
+            padding: 10px;
+        """)
         layout.addWidget(self.status_label)
         
         self.setLayout(layout)
@@ -313,27 +378,26 @@ class ServerMonitorPanel(QWidget):
     
     def _update_display(self, data: dict):
         """更新显示数据"""
-        print(f"[DEBUG] _update_display 被调用，数据 keys: {list(data.keys())}")
-        
-        self.status_label.setText("已连接 • 实时更新中")
+        self.status_label.setText("● 已连接 • 实时更新中")
+        self.status_label.setStyleSheet("color: #34c759; font-size: 13px; padding: 10px;")
         
         # 更新 CPU
         if 'cpu_info' in data and data['cpu_info']:
             cpu = data['cpu_info']
-            print(f"[DEBUG] 更新 CPU: {cpu.usage_percent}%, {cpu.cores} cores")
-            self.cpu_usage_bar.setValue(int(cpu.usage_percent))
-            self.cpu_usage_bar.setFormat(f"{cpu.usage_percent:.1f}%")
+            usage = cpu.usage_percent or 0.0
+            self.cpu_usage_bar.setValue(int(usage))
+            self.cpu_usage_bar.setFormat(f"{usage:.1f}%")
+            self.cpu_value_label.setText(f"{usage:.1f}%")
             self.cpu_cores_label.setText(f"核心数：{cpu.cores}")
-            self.cpu_model_label.setText(f"型号：{cpu.model}")
-        else:
-            print(f"[DEBUG] 没有 CPU 数据")
+            self.cpu_model_label.setText(f"型号：{cpu.model or 'Unknown'}")
         
         # 更新内存
         if 'memory' in data and data['memory']:
             mem = data['memory']
-            print(f"[DEBUG] 更新内存：{mem.usage_percent}%")
-            self.memory_usage_bar.setValue(int(mem.usage_percent))
-            self.memory_usage_bar.setFormat(f"{mem.usage_percent:.1f}%")
+            usage = mem.usage_percent or 0.0
+            self.memory_usage_bar.setValue(int(usage))
+            self.memory_usage_bar.setFormat(f"{usage:.1f}%")
+            self.memory_value_label.setText(f"{usage:.1f}%")
             
             total_str = SystemParser.format_size(mem.total)
             used_str = SystemParser.format_size(mem.used)
@@ -342,12 +406,11 @@ class ServerMonitorPanel(QWidget):
             self.memory_detail_label.setText(
                 f"总计：{total_str} | 已用：{used_str} | 可用：{available_str}"
             )
-        else:
-            print(f"[DEBUG] 没有内存数据")
         
         # 更新系统负载
         if 'load' in data and data['load']:
             load = data['load']
+            self.load_value_label.setText(f"{load.load_1min:.2f}")
             self.load_1min_label.setText(f"1 分钟：{load.load_1min:.2f}")
             self.load_5min_label.setText(f"5 分钟：{load.load_5min:.2f}")
             self.load_15min_label.setText(f"15 分钟：{load.load_15min:.2f}")
@@ -364,7 +427,7 @@ class ServerMonitorPanel(QWidget):
                 tx_gb = net.bytes_sent / (1024**3)
                 network_text += f"{net.interface}: ↓{rx_gb:.2f} GB ↑{tx_gb:.2f} GB\n"
             
-            self.network_label.setText(network_text.strip())
+            self.network_label.setText(network_text.strip() if network_text.strip() else "暂无数据")
         
         # 更新磁盘
         if 'disks' in data and data['disks']:

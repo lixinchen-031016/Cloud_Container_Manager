@@ -1,15 +1,16 @@
 """
 主窗口模块
-应用的主要界面框架
+应用的主要界面框架 - macOS 风格优化版
 """
+from typing import Optional, Dict, Any
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QTabWidget, QStatusBar, QMenuBar, QMenu,
     QLabel, QFrame, QListWidget, QListWidgetItem,
-    QMessageBox, QSplitter, QPushButton
+    QMessageBox, QPushButton, QScrollArea, QToolButton
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QAction
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QAction, QFont, QIcon
 
 import sys
 import os
@@ -94,31 +95,25 @@ class MainWindow(QMainWindow):
     def _create_sidebar(self) -> QWidget:
         """创建侧边栏"""
         widget = QWidget()
-        widget.setMaximumWidth(250)
-        widget.setMinimumWidth(200)
+        widget.setObjectName("sidebar")
+        widget.setMaximumWidth(280)
+        widget.setMinimumWidth(220)
         
         layout = QVBoxLayout()
         layout.setSpacing(0)
         layout.setContentsMargins(0, 0, 0, 0)
         
         # 标题区域
-        title_frame = QFrame()
-        title_frame.setObjectName("sidebarTitle")
-        title_layout = QVBoxLayout()
-        title_layout.setSpacing(5)
+        title_label = QLabel("☁️ 服务器")
+        title_label.setObjectName("sidebarTitle")
+        layout.addWidget(title_label)
         
-        title_label = QLabel("服务器")
-        title_label.setStyleSheet("font-size: 16px; font-weight: bold; padding: 10px;")
-        title_layout.addWidget(title_label)
-        
+        # 添加服务器按钮
         add_btn = QPushButton("+ 添加服务器")
         add_btn.setObjectName("addServerBtn")
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         add_btn.clicked.connect(self._add_server)
-        title_layout.addWidget(add_btn)
-        
-        title_frame.setLayout(title_layout)
-        layout.addWidget(title_frame)
+        layout.addWidget(add_btn)
         
         # 服务器列表
         self.server_list = QListWidget()
@@ -199,144 +194,284 @@ class MainWindow(QMainWindow):
         help_menu.addAction(about_action)
     
     def _apply_styles(self):
-        """应用样式"""
+        """应用 macOS 风格样式"""
         self.setStyleSheet("""
             QMainWindow {
-                background-color: #f5f5f5;
+                background-color: #f5f5f7;
             }
             
-            #sidebarTitle {
-                background-color: #e0e0e0;
-                border-bottom: 1px solid #ccc;
+            /* 侧边栏样式 */
+            QWidget#sidebar {
+                background-color: #ffffff;
+                border-right: 1px solid #e0e0e0;
             }
             
-            #addServerBtn {
-                background-color: #4CAF50;
+            QLabel#sidebarTitle {
+                background-color: #ffffff;
+                color: #1d1d1f;
+                font-size: 20px;
+                font-weight: 600;
+                padding: 20px 15px 10px 15px;
+                border-bottom: none;
+            }
+            
+            QPushButton#addServerBtn {
+                background-color: #007aff;
                 color: white;
                 border: none;
-                padding: 8px;
-                margin: 5px;
-                border-radius: 4px;
-                font-weight: bold;
+                padding: 10px 20px;
+                margin: 10px 15px 15px 15px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
             }
             
-            #addServerBtn:hover {
-                background-color: #45a049;
+            QPushButton#addServerBtn:hover {
+                background-color: #005ecb;
             }
             
-            #serverList {
+            QPushButton#addServerBtn:pressed {
+                background-color: #0051b3;
+            }
+            
+            /* 服务器列表样式 */
+            QListWidget#serverList {
                 border: none;
-                background-color: white;
+                background-color: transparent;
                 outline: none;
+                padding: 0 10px;
             }
             
-            #serverList::item {
-                padding: 10px;
-                border-bottom: 1px solid #eee;
+            QListWidget#serverList::item {
+                padding: 12px 15px;
+                margin: 2px 0;
+                border-radius: 6px;
+                color: #1d1d1f;
+                font-size: 14px;
             }
             
-            #serverList::item:selected {
-                background-color: #e3f2fd;
-                color: #1976D2;
+            QListWidget#serverList::item:selected {
+                background-color: #e8f2ff;
+                color: #007aff;
+                font-weight: 500;
             }
             
-            #serverList::item:hover {
-                background-color: #f5f5f5;
+            QListWidget#serverList::item:hover {
+                background-color: #f5f5f7;
             }
             
-            #mainTabs {
-                background-color: white;
+            /* 标签页样式 - macOS 风格 */
+            QTabWidget#mainTabs {
+                background-color: #f5f5f7;
                 border: none;
             }
             
-            #mainTabs::pane {
+            QTabWidget#mainTabs::pane {
                 border: none;
-                background-color: white;
+                background-color: #ffffff;
+                border-radius: 12px;
+                padding: 0px;
             }
             
-            #mainTabs::tab-bar {
+            QTabWidget#mainTabs::tab-bar {
                 alignment: left;
+                left: 20px;
             }
             
             QTabBar::tab {
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-                border-bottom: none;
-                border-top-left-radius: 4px;
-                border-top-right-radius: 4px;
-                padding: 10px 20px;
-                margin-right: 2px;
+                background-color: transparent;
+                color: #86868b;
+                border: none;
+                border-top-left-radius: 8px;
+                border-top-right-radius: 8px;
+                padding: 12px 24px;
+                margin-right: 4px;
+                font-size: 13px;
+                font-weight: 500;
+                min-width: 100px;
             }
             
             QTabBar::tab:selected {
-                background-color: white;
-                border-bottom: 2px solid #4CAF50;
+                background-color: #ffffff;
+                color: #007aff;
+                font-weight: 600;
             }
             
-            QTabBar::tab:hover {
-                background-color: #e0e0e0;
+            QTabBar::tab:hover:!selected {
+                background-color: rgba(0, 122, 255, 0.08);
+                color: #1d1d1f;
             }
             
+            /* 按钮样式 */
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #007aff;
                 color: white;
                 border: none;
-                padding: 8px 16px;
-                border-radius: 4px;
-                font-weight: bold;
+                padding: 10px 20px;
+                border-radius: 8px;
+                font-size: 14px;
+                font-weight: 500;
             }
             
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #005ecb;
+            }
+            
+            QPushButton:pressed {
+                background-color: #0051b3;
             }
             
             QPushButton:disabled {
-                background-color: #cccccc;
-                color: #666666;
+                background-color: #d1d1d6;
+                color: #8e8e93;
             }
             
+            QPushButton#secondaryBtn {
+                background-color: #f5f5f7;
+                color: #1d1d1f;
+                border: 1px solid #d1d1d6;
+            }
+            
+            QPushButton#secondaryBtn:hover {
+                background-color: #e8e8ed;
+            }
+            
+            /* 表格样式 */
             QTableWidget {
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                gridline-color: #eee;
+                border: 1px solid #e0e0e0;
+                border-radius: 8px;
+                gridline-color: #f5f5f7;
+                background-color: white;
+                alternate-background-color: #fafafa;
             }
             
             QTableWidget::item {
-                padding: 8px;
+                padding: 10px;
+                border: none;
+            }
+            
+            QTableWidget::item:selected {
+                background-color: #e8f2ff;
+                color: #007aff;
             }
             
             QHeaderView::section {
-                background-color: #f5f5f5;
-                padding: 8px;
+                background-color: #f5f5f7;
+                padding: 12px 8px;
                 border: none;
-                border-bottom: 2px solid #ddd;
-                font-weight: bold;
+                border-bottom: 2px solid #e0e0e0;
+                font-weight: 600;
+                color: #86868b;
+                font-size: 12px;
+                text-transform: uppercase;
             }
             
+            /* 进度条样式 */
             QProgressBar {
-                border: 1px solid #ccc;
-                border-radius: 3px;
+                border: none;
+                border-radius: 6px;
                 text-align: center;
+                background-color: #e8e8ed;
+                height: 8px;
             }
             
+            QProgressBar::chunk {
+                background-color: #007aff;
+                border-radius: 6px;
+            }
+            
+            /* 滚动条样式 - macOS 风格 */
             QScrollBar:vertical {
-                background-color: #f5f5f5;
-                width: 10px;
-                border-radius: 5px;
+                background-color: transparent;
+                width: 12px;
+                border-radius: 6px;
+                margin: 0;
             }
             
             QScrollBar::handle:vertical {
-                background-color: #ccc;
-                border-radius: 5px;
-                min-height: 20px;
+                background-color: #d1d1d6;
+                border-radius: 6px;
+                min-height: 30px;
+                margin: 2px;
             }
             
             QScrollBar::handle:vertical:hover {
-                background-color: #aaa;
+                background-color: #c7c7cc;
+            }
+            
+            QScrollBar::handle:vertical:pressed {
+                background-color: #8e8e93;
             }
             
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
+            }
+            
+            QScrollBar:horizontal {
+                background-color: transparent;
+                height: 12px;
+                border-radius: 6px;
+                margin: 0;
+            }
+            
+            QScrollBar::handle:horizontal {
+                background-color: #d1d1d6;
+                border-radius: 6px;
+                min-width: 30px;
+                margin: 2px;
+            }
+            
+            QScrollBar::handle:horizontal:hover {
+                background-color: #c7c7cc;
+            }
+            
+            /* 状态栏 */
+            QStatusBar {
+                background-color: #ffffff;
+                border-top: 1px solid #e0e0e0;
+                color: #86868b;
+                font-size: 12px;
+            }
+            
+            /* 菜单栏 */
+            QMenuBar {
+                background-color: #ffffff;
+                border-bottom: 1px solid #e0e0e0;
+                padding: 4px 10px;
+            }
+            
+            QMenuBar::item {
+                padding: 6px 12px;
+                border-radius: 6px;
+                background-color: transparent;
+            }
+            
+            QMenuBar::item:selected {
+                background-color: #f5f5f7;
+            }
+            
+            QMenu {
+                background-color: #ffffff;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 8px 0;
+            }
+            
+            QMenu::item {
+                padding: 8px 20px;
+                margin: 2px 10px;
+                border-radius: 6px;
+            }
+            
+            QMenu::item:selected {
+                background-color: #007aff;
+                color: white;
+            }
+            
+            QMenu::separator {
+                height: 1px;
+                background-color: #e0e0e0;
+                margin: 6px 10px;
             }
         """)
     

@@ -3,3 +3,12 @@ paramiko>=3.0.0
 docker>=6.0.0
 cryptography>=41.0.0
 PyYAML>=6.0
+
+# macOS 系统集成（用于深色模式检测、通知中心、菜单栏）
+# PyObjC 12.0+ 中 AppKit 已包含在 pyobjc-framework-Cocoa 中
+pyobjc-framework-Cocoa>=9.0; sys_platform == 'darwin'
+pyobjc-framework-Quartz>=9.0; sys_platform == 'darwin'
+pyobjc-framework-UserNotifications>=9.0; sys_platform == 'darwin'
+
+# 可选：动画增强
+# qt-material>=2.14
